@@ -11,18 +11,19 @@ async function scrapeTrackScore(username, track) {
   const url = `https://www.hackerrank.com/leaderboard?filter=${username}&filter_on=hacker&page=1&track=${track}&type=practice`;
 
   const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      "--disable-setuid-sandbox",
-      "--no-sandbox",
-      "--single-process",
-      "--no-zygote"
-    ],
-    executablePath:
-      process.env.NODE_ENV === "production"
-        ? process.env.PUPPETEER_EXECUTABLE_PATH
-        : undefined
-  });
+  headless: 'new', 
+  args: [
+    "--disable-setuid-sandbox",
+    "--no-sandbox",
+    "--single-process",
+    "--no-zygote"
+  ],
+  executablePath:
+    process.env.NODE_ENV === "production"
+      ? process.env.PUPPETEER_EXECUTABLE_PATH
+      : undefined
+});
+
 
   const page = await browser.newPage();
   await page.setUserAgent(
