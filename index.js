@@ -1,8 +1,10 @@
 const express = require('express');
-const puppeteer = require('puppeteer-extra');
+const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
+const puppeteerExtra = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
-puppeteer.use(StealthPlugin());
+puppeteerExtra.use(StealthPlugin());
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,15 +12,11 @@ const PORT = process.env.PORT || 3000;
 async function scrapeTrackScore(username, track) {
   const url = `https://www.hackerrank.com/leaderboard?filter=${username}&filter_on=hacker&page=1&track=${track}&type=practice`;
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--single-process',
-      '--disable-gpu'
-    ]
+  const browser = await puppeteerExtra.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless,
   });
 
   const page = await browser.newPage();
@@ -29,6 +27,7 @@ async function scrapeTrackScore(username, track) {
 
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
     await page.waitForSelector('.ui-table.ui-leaderboard-table', { timeout: 20000 });
 
     const userData = await page.evaluate((username) => {
@@ -79,7 +78,7 @@ app.get('/scrape', async (req, res) => {
       algorithm_score: algorithmsData?.score || 'N/A',
       algorithm_rank: algorithmsData?.rank || 'N/A',
       data_structures_score: dataStructuresData?.score || 'N/A',
-      data_structures_rank: dataStructuresData?.rank || 'N/A'
+      data_structures_rank: dataStructuresData?.rank || 'N/A',
     });
   } catch (err) {
     console.error('Scraping error:', err.message);
@@ -88,7 +87,7 @@ app.get('/scrape', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('HackerRank API is live!');
+  res.send('HackerRank API is live ');
 });
 
 app.listen(PORT, () => {
