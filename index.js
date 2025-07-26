@@ -1,6 +1,6 @@
 const express = require('express');
-const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 const puppeteerExtra = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
@@ -9,16 +9,31 @@ puppeteerExtra.use(StealthPlugin());
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Detect local vs Render
+const isLocal = !process.env.AWS_EXECUTION_ENV;
+
+async function getBrowser() {
+  if (isLocal) {
+    const puppeteerLocal = require('puppeteer');
+    return await puppeteerExtra.launch({
+      headless: true,
+      executablePath: puppeteerLocal.executablePath(),
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+  } else {
+    return await puppeteerExtra.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+    });
+  }
+}
+
 async function scrapeTrackScore(username, track) {
   const url = `https://www.hackerrank.com/leaderboard?filter=${username}&filter_on=hacker&page=1&track=${track}&type=practice`;
 
-  const browser = await puppeteerExtra.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless,
-  });
-
+  const browser = await getBrowser();
   const page = await browser.newPage();
 
   await page.setUserAgent(
@@ -87,7 +102,7 @@ app.get('/scrape', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('HackerRank API is live ');
+  res.send('HackerRank API is live 🚀');
 });
 
 app.listen(PORT, () => {
